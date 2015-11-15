@@ -5,20 +5,11 @@ public class Metronome : MonoBehaviour {
 	
 	public Timer timer;
 	//In seconds per beat
-	private float tempoAdjustRate = 0.05f;
-	public float TempoAdjustRate {
-		get { return this.tempoAdjustRate; }
-	}
+	public float tempoAdjustRate = 0.05f;
+
+	public float maxTempo;
 	
-	private float maxTempo = 0.05f;
-	public float MaxTempo {
-		get { return this.maxTempo; }
-	}
-	
-	private float minTempo = 1.0f;
-	public float MinTempo {
-		get { return this.minTempo; }
-	}
+	public float minTempo;
 	
 	public float tempo, baseTempo;
 	
@@ -33,6 +24,8 @@ public class Metronome : MonoBehaviour {
 		get { return this.isTicking; }
 		set { this.isTicking = value; }
 	}
+	
+	#region Monodevelop
 	// Use this for initialization
 	void Start () {
 		this.timer = new Timer();
@@ -41,14 +34,19 @@ public class Metronome : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		this.timer.Update();
 		if (this.timer.IsTiming) {
-			if (this.timer.TimeElapsed > tempo) {
+			this.timer.Update();
+			if (this.timer.Seconds > tempo) {
 				beat++;
 				this.timer.Reset();
 			}
 		}
 	}
+	
+	#endregion
+	
+	#region Controller Functions
+	
 	public void Begin() {
 		this.timer.Start();
 		this.isTicking = true;
@@ -85,5 +83,7 @@ public class Metronome : MonoBehaviour {
 			this.tempo = this.minTempo;
 		}
 	}
+	
+	#endregion
 	
 }

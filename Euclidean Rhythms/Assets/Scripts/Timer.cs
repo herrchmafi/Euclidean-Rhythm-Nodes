@@ -2,10 +2,10 @@
 using System.Collections;
 
 public class Timer {
-	private float timeElapsed = 0.0f;
-	public float TimeElapsed {
-		get { return this.timeElapsed; }
-		set { this.timeElapsed = value; }
+	private float seconds = 0.0f;
+	public float Seconds {
+		get { return this.seconds; }
+		set { this.seconds = value; }
 	}
 	private bool isTiming = false;
 	public bool IsTiming {
@@ -14,7 +14,7 @@ public class Timer {
 	
 	public void Update() {
 		if (this.isTiming) {
-			timeElapsed += Time.deltaTime;
+			seconds += Time.deltaTime;
 		}
 	}
 	public void Start() {
@@ -31,7 +31,7 @@ public class Timer {
 	}
 	
 	public void Reset() {
-		this.timeElapsed = 0.0f;
+		this.seconds = 0.0f;
 	}
 	
 }

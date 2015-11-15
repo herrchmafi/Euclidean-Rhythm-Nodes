@@ -7,56 +7,72 @@ public class EuclidNode : MonoBehaviour {
 	private ArrayList measure;
 	
 	private string rhythmString = "";
-	public string RhythmString {
-		get { return this.rhythmString; }
-	}
 	
-	private string euclidString;
-	public string EuclidString {
-		get { return this.euclidString; }
-	}
+	private string euclidString = "";
 	
 	private bool isPlaying = false;
 	public bool IsPlaying {
 		get { return this.IsPlaying; }
 	}
 	
+	private const float maxVolume = 100.0f;
 	public float volume;
 	
 	public AudioClip audioClip;
 	private AudioSource audioSource;
 	private Metronome metronome;
-
+	
 	private Vector3 originalScale;
 	
+	public Vector2 displayTextOffset;
+	public GUIStyle displayTextStyle;
 	//Starts at index - 1 so first beat can be played
 	//Beat offset is initiated while the metronome is already running will start at first index
-	private int previousBeatRef = -1, beatOffset;
+	private int previousBeatRef = -1;
+	private int beatOffset;
 	
+	#region Legacy
+	
+	void OnGUI(){
+		string displayText = this.rhythmString + "\n" + this.euclidString;
+		Vector3 point = (Vector3)Camera.main.WorldToScreenPoint(new Vector2(transform.position.x + this.displayTextOffset.x, transform.position.y + this.displayTextOffset.y));
+		GUI.Label(new Rect(point.x, point.y, 50, 50), displayText, this.displayTextStyle);
+		GUI.color = Color.blue;
+	}
+	
+	#endregion
+	
+	#region Monodevelop
 	// Use this for initialization
 	void Start () {
-		this.metronome = GameObject.FindGameObjectWithTag("Metronome").GetComponent<Metronome>();
+		this.metronome = GameObject.FindGameObjectWithTag(SceneConstants.metronomeTag).GetComponent<Metronome>();
 		this.audioSource = gameObject.GetComponent<AudioSource>();
 		this.originalScale = transform.localScale;
-					
+		this.SetRhythm((int)this.stepsPulses.x, (int)this.stepsPulses.y);			
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		//Resizing nodes
 		if (this.isPlaying) {
-			float u = this.metronome.timer.TimeElapsed / this.metronome.tempo; 
+			float u = this.metronome.timer.Seconds / this.metronome.tempo; 
+			//Resize Node Accordingly
 			transform.localScale = Vector3.Lerp(transform.localScale, this.originalScale, u);
-			//Check to see if measure at index has a pulse and if beat has been played already for current index
-			if (this.measure.Count != 0 && (bool)this.measure[(this.metronome.Beat - this.beatOffset) % this.measure.Count] && this.previousBeatRef != (this.metronome.Beat - this.beatOffset)) {
-				PlaySound();
-				Vector3 targetScale = transform.localScale + Vector3.one * volume / 100.0f;
+			//Check to see if measure at index has a pulse and if a beat has been played already for current index
+			if (this.measure.Count != 0 
+			&& (bool)this.measure[(this.metronome.Beat - this.beatOffset) % this.measure.Count] 
+			&& this.previousBeatRef != (this.metronome.Beat - this.beatOffset)) {
+				this.PlaySound();
+				Vector3 targetScale = transform.localScale + Vector3.one * this.volume / maxVolume;
 				transform.localScale = targetScale;
 			}
 			this.previousBeatRef = (this.metronome.Beat - this.beatOffset);
 		}
 	}
 	
+	#endregion
+	
+	#region Controller Functions
 	public void Begin() {
 		this.isPlaying = true;
 		this.beatOffset = this.metronome.Beat;
@@ -77,22 +93,34 @@ public class EuclidNode : MonoBehaviour {
 	}
 	
 	public void SetRhythm(int u, int v) {
+		if (v > u) {
+			throw new System.ArgumentException("Steps May Not Exceed The Number Of Pulses");
+		}
 		this.previousBeatRef = -1;
 		this.beatOffset = this.metronome.Beat;
-		BuildRhythm(u, v);
+		this.BuildRhythm(u, v);
 		this.rhythmString = BuildRhythmString();
 		this.euclidString = BuildEuclidString();
 	}
+	
+	#endregion
+	
+	#region Helper Functions
 	
 	private void PlaySound() {
 		this.audioSource.PlayOneShot(this.audioClip, volume);
 	}
 	
+	#endregion
+	
+	#region Euclidean Algortihm Functions
+	
+	//http://cgm.cs.mcgill.ca/~godfried/publications/banff.pdf for implementation details
 	private void BuildRhythm(int u, int v) {
 		this.measure = new ArrayList();
 		this.stepsPulses.x = u;
 		this.stepsPulses.y = v;
-		//if u divisible by v, then evenly distribute pulses in measure
+		//if u divisible by v, then evenly distribute pulses in measure. No need to use algorithm in this case
 		if (u == 0) {
 			this.measure = new ArrayList();
 			this.rhythmString = BuildRhythmString();
@@ -127,7 +155,7 @@ public class EuclidNode : MonoBehaviour {
 	
 		int targetU = (isVSmall) ? u : u - (u - v);
 		int targetV = (isVSmall) ? v : u - v;
-		Euclidean(targetU, targetV);
+		this.Euclidean(targetU, targetV);
 		
 		//Concatenate subsequent segments generated from Euclidean to first segment
 		ArrayList startSeg = (ArrayList)this.measure[0];
@@ -158,8 +186,12 @@ public class EuclidNode : MonoBehaviour {
 			startSeg.AddRange(endSeg);
 			this.measure.RemoveAt(this.measure.Count - 1);
 		}
-		Euclidean(v, u % v);
+		this.Euclidean(v, u % v);
 	}
+	
+	#endregion
+	
+	#region Display Text
 	
 	private string BuildRhythmString() {
 		string rhythmString =  "[ ";
@@ -174,5 +206,7 @@ public class EuclidNode : MonoBehaviour {
 	private string BuildEuclidString () {
 		return "(" + this.stepsPulses.x + ", " + this.stepsPulses.y + ")";
 	}
+	
+	#endregion
 	
 }
