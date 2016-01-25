@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class EuclidNode : MonoBehaviour {
 	public Vector2 stepsPulses;
 	
-	private ArrayList measure;
+	private List<bool> measure;
 	
 	private string rhythmString = "";
 	
@@ -117,14 +118,14 @@ public class EuclidNode : MonoBehaviour {
 	
 	//http://cgm.cs.mcgill.ca/~godfried/publications/banff.pdf for implementation details
 	private void BuildRhythm(int u, int v) {
-		this.measure = new ArrayList();
+		this.measure = new List<bool>();
 		this.stepsPulses.x = u;
 		this.stepsPulses.y = v;
 		//if u divisible by v, then evenly distribute pulses in measure. No need to use algorithm in this case
 		if (u == 0) {
-			this.measure = new ArrayList();
-			this.rhythmString = BuildRhythmString();
-			this.euclidString = BuildEuclidString();
+			this.measure = new List<bool>();
+			this.rhythmString = this.BuildRhythmString();
+			this.euclidString = this.BuildEuclidString();
 			return;
 		}
 		if (u % v == 0) {
@@ -143,29 +144,30 @@ public class EuclidNode : MonoBehaviour {
 		//if v is greater than u / 2, then you must invert the values
 		bool isVSmall = (v < u / 2);
 		//Initial setup for measure (Series of 1's followed by series of 0's)
+		//Auxilliary list will be used for the calculation
+		List<List<bool>> auxMeasure = new List<List<bool>>();
 		for (int i = 0; i < u; i++) {
-			ArrayList note = new ArrayList();
+			List<bool> nextSeg = new List<bool>();
 			if (i < v) {
-				note.Add(isVSmall);
+				nextSeg.Add(isVSmall);
 			} else {
-				note.Add(!isVSmall);
+				nextSeg.Add(!isVSmall);
 			}
-			this.measure.Add(note);
+			auxMeasure.Add(nextSeg);
 		}
 	
 		int targetU = (isVSmall) ? u : u - (u - v);
 		int targetV = (isVSmall) ? v : u - v;
-		this.Euclidean(targetU, targetV);
+		this.Euclidean(targetU, targetV, auxMeasure);
 		
 		//Concatenate subsequent segments generated from Euclidean to first segment
-		ArrayList startSeg = (ArrayList)this.measure[0];
-		while (this.measure.Count > 1) {
-			ArrayList nextSeg = (ArrayList)this.measure[1];
+		List<bool> startSeg = auxMeasure[0];
+		while (auxMeasure.Count > 1) {
+			List<bool> nextSeg = auxMeasure[1];
 			startSeg.AddRange(nextSeg);
-			this.measure.RemoveAt(1);
+			auxMeasure.RemoveAt(1);
 		}
-		ArrayList temp = (ArrayList)this.measure[0];
-		this.measure = temp;
+		this.measure = auxMeasure[0];
 		
 		//Invert back if v was greater than u / 2
 		if (!isVSmall) {
@@ -173,20 +175,20 @@ public class EuclidNode : MonoBehaviour {
 				this.measure[i] = !(bool)this.measure[i];
 			}	
 		}
-		this.rhythmString = BuildRhythmString();
-		this.euclidString = BuildEuclidString();
+		this.rhythmString = this.BuildRhythmString();
+		this.euclidString = this.BuildEuclidString();
 	}
 	
-	private void Euclidean(int u, int v) {
+	private void Euclidean(int u, int v, List<List<bool>> auxMeasure) {
 		if (v == 0) { return ; }
 		//Concats starting segments to ending
 		for (int i = 0; i < v; i++) {
-			ArrayList endSeg = (ArrayList)this.measure[this.measure.Count - 1];
-			ArrayList startSeg = (ArrayList)this.measure[i];
+			List<bool> endSeg = auxMeasure[auxMeasure.Count - 1];
+			List<bool> startSeg = auxMeasure[i];
 			startSeg.AddRange(endSeg);
-			this.measure.RemoveAt(this.measure.Count - 1);
+			auxMeasure.RemoveAt(auxMeasure.Count - 1);
 		}
-		this.Euclidean(v, u % v);
+		this.Euclidean(v, u % v, auxMeasure);
 	}
 	
 	#endregion
